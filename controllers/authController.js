@@ -2,15 +2,7 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const LoginWithOtpModel = require("../models/LoginWithOtpModel");
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'deepansu082002@gmail.com',
-    pass: "ufpufuijvtzbblya"  
-  }
-});
+const { transporter } = require("..");
 
 // Generate OTP
 const generateOTP = () => {
