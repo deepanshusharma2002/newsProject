@@ -5,6 +5,7 @@ const authRoutes = require("./routes/authRoutes.js");
 const newsRoutes = require("./routes/NewsRoutes.js");
 const path = require('path');
 const nodemailer = require("nodemailer");
+const cors = require('cors');
 
 dotenv.config();
 const app = express();
@@ -12,6 +13,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Middleware
 app.use(express.json());
+app.use(cors());
 
 // Database connection
 mongoose
