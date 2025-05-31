@@ -1,6 +1,5 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const LoginWithOtpModel = require("../models/LoginWithOtpModel");
 const { transporter } = require("..");
 

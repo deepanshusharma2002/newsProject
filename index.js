@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes.js");
 const newsRoutes = require("./routes/NewsRoutes.js");
 const path = require('path');
+const nodemailer = require("nodemailer");
 
 dotenv.config();
 const app = express();
