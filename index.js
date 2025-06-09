@@ -4,7 +4,6 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes.js");
 const newsRoutes = require("./routes/NewsRoutes.js");
 const path = require('path');
-const nodemailer = require("nodemailer");
 const cors = require('cors');
 
 dotenv.config();
@@ -24,15 +23,6 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.MONGO_URI,
-    pass: process.env.MAILTRAP_PASS
-  }
-});
-
-
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/news", newsRoutes);
@@ -40,4 +30,3 @@ app.use("/api/news", newsRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-module.exports = { transporter };

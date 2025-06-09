@@ -1,11 +1,20 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const LoginWithOtpModel = require("../models/LoginWithOtpModel");
-const { transporter } = require("..");
+const nodemailer = require("nodemailer");
+
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.MONGO_URI || 'deepansu082002@gmail.com',
+    pass: process.env.MAILTRAP_PASS || 'ufpufuijvtzbblya'
+  }
+});
 
 // Generate OTP
 const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(1000 + Math.random() * 9000).toString();
 };
 
 // Signup
@@ -13,6 +22,8 @@ exports.signup = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+
+    await User.deleteMany({ email, isVerified: false });
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
@@ -23,12 +34,11 @@ exports.signup = async (req, res) => {
 
     user = new User({
       email,
-      password,
+      password: password,
       otp,
       otpExpires,
+      isVerified: false
     });
-
-    await user.save();
 
     // Send OTP email
     const mailOptions = {
@@ -40,8 +50,11 @@ exports.signup = async (req, res) => {
 
     await transporter.sendMail(mailOptions);
 
+    await user.save();
+
     res.status(201).json({ message: "OTP sent to email. Please verify." });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
