@@ -149,7 +149,7 @@ exports.login = async (req, res) => {
 
 
         checkRequest.otp = otp;
-        checkRequest.otpExpires = undeotpExpiresfined;
+        checkRequest.otpExpires = otpExpires;
 
         await checkRequest.save();
 
