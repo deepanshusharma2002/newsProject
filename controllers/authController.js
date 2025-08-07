@@ -19,7 +19,7 @@ const generateOTP = () => {
 
 // Signup
 exports.signup = async (req, res) => {
-  const { email, password } = req.body;
+  const { name, type, number, email, password } = req.body;
 
   try {
 
@@ -37,7 +37,10 @@ exports.signup = async (req, res) => {
       password: password,
       otp,
       otpExpires,
-      isVerified: false
+      isVerified: false,
+      name: name,
+      number: number,
+      type: type
     });
 
     // Send OTP email

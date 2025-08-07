@@ -26,6 +26,15 @@ const userSchema = new mongoose.Schema({
   otpExpires: {
     type: Date,
   },
+  name: {
+    type: String,
+  },
+  number: {
+    type: String,
+  },
+  type: {
+    type: String,
+  },
 });
 
 userSchema.pre('save', async function (next) {
