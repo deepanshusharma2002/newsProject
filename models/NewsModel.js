@@ -12,6 +12,7 @@ const NewsModelSchema = new mongoose.Schema({
     images: [{
         url: { type: String },
     }],
+    type: { type: String },
     ...BaseSchemaFields
 },
     BaseSchemaOptions);

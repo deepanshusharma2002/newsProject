@@ -84,11 +84,11 @@ exports.verifyOTP = async (req, res) => {
 
       await LoginWithOtpModel.deleteMany({ email });
 
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
         expiresIn: "1d",
       });
 
-      res.status(200).json({ message: "Login successful", token });
+      res.status(200).json({ message: "Login successful", data: { token, id: user._id, role: user.role } });
     } else {
       const user = await User.findOne({ email });
       if (!user) {
@@ -108,11 +108,11 @@ exports.verifyOTP = async (req, res) => {
       user.otpExpires = undefined;
       await user.save();
 
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
         expiresIn: "1d",
       });
 
-      res.status(200).json({ message: "User verified successfully", token });
+      res.status(200).json({ message: "User verified successfully", data: { token, id: user._id, role: user.role } });
     }
 
   } catch (error) {
@@ -207,11 +207,11 @@ exports.login = async (req, res) => {
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
         expiresIn: "1d",
       });
 
-      res.status(200).json({ message: "Login successful", token });
+      res.status(200).json({ message: "Login successful", data: { token, id: user._id, role: user.role } });
     }
 
   } catch (error) {

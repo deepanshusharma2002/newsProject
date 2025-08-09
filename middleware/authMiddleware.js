@@ -14,11 +14,16 @@ exports.protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ _id: decoded.id });
-    req.userId = user._id;
-    req.role = user.role || "user";
+    const user = await User.findOne({ _id: decoded.id, isVerified: true });
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not Verified' });
+    }
+
+    req.body.user_id = user._id;
+    req.body.role = user.role || "user";
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Token is not valid' });
+    res.status(401).json({ message: 'User not Verified' });
   }
 };
