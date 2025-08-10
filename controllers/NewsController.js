@@ -218,11 +218,11 @@ const NewsController = {
                     newsText,
                     category,
                     scheduleNews: scheduleNews || null,
-                    isPremiumUser,
-                    user_id: req?.userId,
+                    isPremiumUser: isPremiumUser || false,
+                    user_id: user_id,
                     premiumcredits: isPremiumUser ? premiumcredits : null,
                     status: type === 'draft' ? 0 : scheduleNews ? 2 : 1,
-                    created_by: req?.userId,
+                    created_by: user_id,
                     images: images
                 });
 
