@@ -219,6 +219,27 @@ exports.login = async (req, res) => {
   }
 };
 
+// Validate Token
+exports.validateToken = async (req, res) => {
+  let token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized, no token' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findOne({ _id: decoded.id, isVerified: true }).select('-password');
+    if (!user) {
+      return res.status(401).json({ message: 'User not Verified' });
+    }
+
+    res.status(200).json({ message: "Token is valid", data: user });
+  } catch (error) {
+    res.status(401).json({ message: "Invalid token", error: error.message });
+  }
+}
+
 // Forgot Password
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;

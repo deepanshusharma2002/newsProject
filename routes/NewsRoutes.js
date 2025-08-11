@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.get('/', protect, newsController.GetNews);
+router.get('/', newsController.GetNews);
 router.post('/', protect, upload.any(), newsController.CreateNews);
 router.delete('/', protect, newsController.DeleteNews);
 

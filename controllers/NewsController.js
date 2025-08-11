@@ -32,7 +32,7 @@ const NewsController = {
         const skip = (page - 1) * limit;
 
         try {
-            await publishScheduledNews();
+            // await publishScheduledNews();
 
             if (post_id) {
                 const news = await News.find({ _id: post_id });
@@ -128,8 +128,8 @@ const NewsController = {
         const session = await mongoose.startSession();
 
         try {
-            const { news_id, user_id, type, title, newsText, category, scheduleNews, isPremiumUser, premiumcredits } = req.body;
-
+            const { news_id, type, title, newsText, category, scheduleNews, isPremiumUser, premiumcredits } = req.body;
+            console.dir(req.body, { depth: null });
             if (news_id) {
                 // Start transaction for update
                 session.startTransaction();
@@ -219,10 +219,11 @@ const NewsController = {
                     category,
                     scheduleNews: scheduleNews || null,
                     isPremiumUser: isPremiumUser || false,
-                    user_id: user_id,
+                    user_id: req.user?.id,
                     premiumcredits: isPremiumUser ? premiumcredits : null,
-                    status: type === 'draft' ? 0 : scheduleNews ? 2 : 1,
-                    created_by: user_id,
+                    status: 1,
+                    // status: type === 'draft' ? 0 : scheduleNews ? 2 : 1,
+                    created_by: req.user?.id,
                     images: images
                 });
 
@@ -270,23 +271,23 @@ const NewsController = {
 
     DeleteNews: async (req, res) => {
         const session = await mongoose.startSession();
-        
+
         try {
             const { id } = req.query;
-    
+
             if (!id) {
                 return res.status(400).json({
                     success: false,
                     message: 'News ID is required'
                 });
             }
-    
+
             // Start transaction
             session.startTransaction();
-    
+
             // Find the news first to get image paths before deletion
             const newsToDelete = await News.findOne({ _id: id }).session(session);
-            
+
             if (!newsToDelete) {
                 await session.abortTransaction();
                 session.endSession();
@@ -295,7 +296,7 @@ const NewsController = {
                     message: 'News not found'
                 });
             }
-    
+
             // Delete associated images from filesystem
             if (newsToDelete.images && newsToDelete.images.length > 0) {
                 await Promise.all(newsToDelete.images.map(async (image) => {
@@ -315,26 +316,26 @@ const NewsController = {
                     }
                 }));
             }
-    
+
             // Delete the news document
             await News.findOneAndDelete({ _id: id }).session(session);
-    
+
             // Commit transaction
             await session.commitTransaction();
             session.endSession();
-    
+
             res.status(200).json({
                 success: true,
                 message: 'News deleted successfully'
             });
-    
+
         } catch (error) {
             // Rollback transaction on error
             if (session.inTransaction()) {
                 await session.abortTransaction();
             }
             session.endSession();
-    
+
             console.error('Error deleting news:', error);
             res.status(500).json({
                 success: false,
