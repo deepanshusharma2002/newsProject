@@ -1,346 +1,587 @@
-const News = require('../models/NewsModel');
-const fs = require('fs');
-const path = require('path');
-const mongoose = require('mongoose');
+// const News = require('../models/NewsModel');
+// const fs = require('fs');
+// const path = require('path');
+// const mongoose = require('mongoose');
+
+// async function publishScheduledNews() {
+//     try {
+//         const now = new Date();
+
+//         await News.updateMany(
+//             {
+//                 scheduleNews: { $lte: now },
+//                 status: 2
+//             },
+//             {
+//                 $set: {
+//                     scheduleNews: null,
+//                     status: 1,
+//                 }
+//             }
+//         );
+
+//     } catch (error) {
+//         console.error('Error publishing scheduled news:', error);
+//         throw error;
+//     }
+// }
+
+// const NewsController = {
+//     GetNews: async (req, res) => {
+//         const { isSelf, post_id, type, user_id, page = 1, limit = 10 } = req.query;
+//         const skip = (page - 1) * limit;
+
+//         try {
+//             // await publishScheduledNews();
+
+//             if (post_id) {
+//                 const news = await News.find({ _id: post_id });
+
+//                 res.status(200).json({
+//                     success: true,
+//                     data: news,
+//                     message: 'News fetched successfully'
+//                 });
+//             } else if (req?.role === 'admin' && type) {
+//                 let condition = {};
+//                 if (type === 'draft') {
+//                     condition = { status: 0 };
+//                 } else if (type === 'scheduled') {
+//                     condition = { status: 2 };
+//                 } else if (type === 'premium') {
+//                     condition = { isPremiumUser: true };
+//                 } else if (type === 'all') {
+//                     condition = {};
+//                 }
+
+//                 const news = await News.find(condition)
+//                     .sort({ createdAt: -1 })
+//                     .skip(skip)
+//                     .limit(parseInt(limit));
+
+//                 const total = await News.countDocuments(condition);
+
+//                 res.status(200).json({
+//                     success: true,
+//                     data: news,
+//                     total,
+//                     page: parseInt(page),
+//                     pages: Math.ceil(total / limit),
+//                     message: 'News fetched successfully'
+//                 });
+//             } else if (user_id || isSelf) {
+//                 let condition = {};
+//                 if (type === 'draft') {
+//                     condition = { status: 0 };
+//                 } else if (type === 'scheduled') {
+//                     condition = { status: 2 };
+//                 } else if (type === 'premium') {
+//                     condition = { isPremiumUser: true };
+//                 }
+
+//                 const news = await News.find({ user_id: isSelf ? req?.userId : user_id, ...condition })
+//                     .sort({ createdAt: -1 })
+//                     .skip(skip)
+//                     .limit(parseInt(limit));
+
+//                 const total = await News.countDocuments({ user_id, ...condition });
+
+//                 res.status(200).json({
+//                     success: true,
+//                     data: news,
+//                     total,
+//                     page: parseInt(page),
+//                     pages: Math.ceil(total / limit),
+//                     message: 'News fetched successfully'
+//                 });
+//             } else {
+//                 const news = await News.find({ status: 1 })
+//                     .populate({
+//                         path: 'user_id',
+//                         select: '-password',
+//                     })
+//                     .sort({ createdAt: -1 })
+//                     .skip(skip)
+//                     .limit(parseInt(limit));
+
+//                 const total = await News.countDocuments({ status: 1 });
+
+//                 res.status(200).json({
+//                     success: true,
+//                     data: news,
+//                     total,
+//                     page: parseInt(page),
+//                     pages: Math.ceil(total / limit),
+//                     message: 'News fetched successfully'
+//                 });
+//             }
+//         } catch (error) {
+//             res.status(500).json({
+//                 success: false,
+//                 message: 'Failed to fetch news',
+//                 error: error.message
+//             });
+//         }
+//     },
+
+//     CreateNews: async (req, res) => {
+//         const session = await mongoose.startSession();
+
+//         try {
+//             const { news_id, type, title, newsText, category, scheduleNews, isPremiumUser, premiumcredits } = req.body;
+//             console.dir(req.body, { depth: null });
+//             if (news_id) {
+//                 // Start transaction for update
+//                 session.startTransaction();
+
+//                 // First get the existing news to handle image cleanup
+//                 const existingNews = await News.findById(news_id).session(session);
+//                 if (!existingNews) {
+//                     throw new Error('News not found');
+//                 }
+
+//                 let updateData = {
+//                     title,
+//                     newsText,
+//                     category,
+//                     scheduleNews: scheduleNews || null,
+//                     isPremiumUser,
+//                     premiumcredits: isPremiumUser ? premiumcredits : null,
+//                     status: type === 'draft' ? 0 : scheduleNews ? 2 : 1,
+//                     updated_by: req?.userId
+//                 };
+
+//                 // Delete old images from filesystem
+//                 if (existingNews.images && existingNews.images.length > 0) {
+//                     existingNews.images.forEach(image => {
+//                         try {
+//                             if (image.url) {
+//                                 const filename = image.url.replace('/uploads/news/', '');
+//                                 const filePath = path.join(__dirname, '../uploads/news/', filename);
+//                                 if (fs.existsSync(filePath)) {
+//                                     fs.unlinkSync(filePath);
+//                                 }
+//                             }
+//                         } catch (fileError) {
+//                             console.error('Error deleting old image:', fileError);
+//                         }
+//                     });
+//                 }
+
+//                 // Handle image updates if files are present
+//                 if (req.files && req.files.length > 0) {
+//                     // Add new images
+//                     const images = req.files.map(file => ({
+//                         url: file.filename ? '/uploads/news/' + file.filename : null
+//                     }));
+//                     updateData.images = images;
+//                 }
+
+//                 // Find and update the news
+//                 const updatedNews = await News.findByIdAndUpdate(
+//                     news_id,
+//                     { $set: updateData },
+//                     { new: true, session }
+//                 );
+
+//                 // Commit transaction if all operations succeed
+//                 await session.commitTransaction();
+//                 session.endSession();
+
+//                 res.status(200).json({
+//                     success: true,
+//                     data: updatedNews,
+//                     message: 'News updated successfully'
+//                 });
+//             } else {
+//                 if (!newsText) {
+//                     return res.status(400).json({
+//                         success: false,
+//                         message: 'Please fill required fields'
+//                     });
+//                 }
+
+//                 // Start transaction
+//                 session.startTransaction();
+
+//                 let images = [];
+
+//                 if (req.files && req.files.length > 0) {
+//                     images = req.files.map(file => ({
+//                         url: file.filename ? '/uploads/news/' + file.filename : null
+//                     }));
+//                 }
+
+//                 // Create news document
+//                 const newNews = new News({
+//                     title,
+//                     newsText,
+//                     category,
+//                     scheduleNews: scheduleNews || null,
+//                     isPremiumUser: isPremiumUser || false,
+//                     user_id: req.user?.id,
+//                     premiumcredits: isPremiumUser ? premiumcredits : null,
+//                     status: 1,
+//                     // status: type === 'draft' ? 0 : scheduleNews ? 2 : 1,
+//                     created_by: req.user?.id,
+//                     images: images
+//                 });
+
+//                 await newNews.save({ session });
+
+//                 // Commit transaction if all operations succeed
+//                 await session.commitTransaction();
+//                 session.endSession();
+
+//                 res.status(201).json({
+//                     success: true,
+//                     data: newNews,
+//                     message: 'News created successfully'
+//                 });
+//             }
+//         } catch (error) {
+//             // Rollback transaction on error
+//             if (session.inTransaction()) {
+//                 await session.abortTransaction();
+//             }
+//             session.endSession();
+
+//             if (req.files && req.files.length > 0) {
+//                 req.files.forEach(file => {
+//                     try {
+//                         const filePath = path.join(__dirname, '../uploads/news/', file.filename);
+//                         if (fs.existsSync(filePath)) {
+//                             fs.unlinkSync(filePath);
+//                         }
+//                     } catch (fileError) {
+//                         console.error('Error cleaning up file:', fileError);
+//                     }
+//                 });
+//             }
+
+//             console.error('Error creating news:', error);
+//             res.status(500).json({
+//                 success: false,
+//                 message: 'Failed to create news',
+//                 error: error.message
+//             });
+//         }
+//     },
+
+
+//     DeleteNews: async (req, res) => {
+//         const session = await mongoose.startSession();
+
+//         try {
+//             const { id } = req.query;
+
+//             if (!id) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: 'News ID is required'
+//                 });
+//             }
+
+//             // Start transaction
+//             session.startTransaction();
+
+//             // Find the news first to get image paths before deletion
+//             const newsToDelete = await News.findOne({ _id: id }).session(session);
+
+//             if (!newsToDelete) {
+//                 await session.abortTransaction();
+//                 session.endSession();
+//                 return res.status(404).json({
+//                     success: false,
+//                     message: 'News not found'
+//                 });
+//             }
+
+//             // Delete associated images from filesystem
+//             if (newsToDelete.images && newsToDelete.images.length > 0) {
+//                 await Promise.all(newsToDelete.images.map(async (image) => {
+//                     try {
+//                         if (image.url) {
+//                             const filename = image.url.split('/uploads/news/')[1];
+//                             if (filename) {
+//                                 const filePath = path.join(__dirname, '../uploads/news/', filename);
+//                                 if (fs.existsSync(filePath)) {
+//                                     fs.unlinkSync(filePath);
+//                                 }
+//                             }
+//                         }
+//                     } catch (fileError) {
+//                         console.error('Error deleting news image:', fileError);
+//                         // Continue with deletion even if image deletion fails
+//                     }
+//                 }));
+//             }
+
+//             // Delete the news document
+//             await News.findOneAndDelete({ _id: id }).session(session);
+
+//             // Commit transaction
+//             await session.commitTransaction();
+//             session.endSession();
+
+//             res.status(200).json({
+//                 success: true,
+//                 message: 'News deleted successfully'
+//             });
+
+//         } catch (error) {
+//             // Rollback transaction on error
+//             if (session.inTransaction()) {
+//                 await session.abortTransaction();
+//             }
+//             session.endSession();
+
+//             console.error('Error deleting news:', error);
+//             res.status(500).json({
+//                 success: false,
+//                 message: 'Failed to delete news',
+//                 error: error.message
+//             });
+//         }
+//     },
+// };
+
+// module.exports = NewsController;
+const fs = require("fs");
+const path = require("path");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
 
 async function publishScheduledNews() {
     try {
         const now = new Date();
 
-        await News.updateMany(
-            {
-                scheduleNews: { $lte: now },
-                status: 2
+        await prisma.news.updateMany({
+            where: {
+                scheduleNews: { lte: now },
+                status: 2,
             },
-            {
-                $set: {
-                    scheduleNews: null,
-                    status: 1,
-                }
-            }
-        );
-
+            data: {
+                scheduleNews: null,
+                status: 1,
+            },
+        });
     } catch (error) {
-        console.error('Error publishing scheduled news:', error);
+        console.error("Error publishing scheduled news:", error);
         throw error;
     }
 }
 
 const NewsController = {
+    // GET news
     GetNews: async (req, res) => {
         const { isSelf, post_id, type, user_id, page = 1, limit = 10 } = req.query;
-        const skip = (page - 1) * limit;
+        const skip = (page - 1) * parseInt(limit);
 
         try {
-            // await publishScheduledNews();
-
+            let condition = {};
             if (post_id) {
-                const news = await News.find({ _id: post_id });
-
-                res.status(200).json({
-                    success: true,
-                    data: news,
-                    message: 'News fetched successfully'
-                });
-            } else if (req?.role === 'admin' && type) {
-                let condition = {};
-                if (type === 'draft') {
-                    condition = { status: 0 };
-                } else if (type === 'scheduled') {
-                    condition = { status: 2 };
-                } else if (type === 'premium') {
-                    condition = { isPremiumUser: true };
-                } else if (type === 'all') {
-                    condition = {};
-                }
-
-                const news = await News.find(condition)
-                    .sort({ createdAt: -1 })
-                    .skip(skip)
-                    .limit(parseInt(limit));
-
-                const total = await News.countDocuments(condition);
-
-                res.status(200).json({
-                    success: true,
-                    data: news,
-                    total,
-                    page: parseInt(page),
-                    pages: Math.ceil(total / limit),
-                    message: 'News fetched successfully'
-                });
-            } else if (user_id || isSelf) {
-                let condition = {};
-                if (type === 'draft') {
-                    condition = { status: 0 };
-                } else if (type === 'scheduled') {
-                    condition = { status: 2 };
-                } else if (type === 'premium') {
-                    condition = { isPremiumUser: true };
-                }
-
-                const news = await News.find({ user_id: isSelf ? req?.userId : user_id, ...condition })
-                    .sort({ createdAt: -1 })
-                    .skip(skip)
-                    .limit(parseInt(limit));
-
-                const total = await News.countDocuments({ user_id, ...condition });
-
-                res.status(200).json({
-                    success: true,
-                    data: news,
-                    total,
-                    page: parseInt(page),
-                    pages: Math.ceil(total / limit),
-                    message: 'News fetched successfully'
-                });
-            } else {
-                const news = await News.find({ status: 1 })
-                    .populate({
-                        path: 'user_id',
-                        select: '-password',
-                    })
-                    .sort({ createdAt: -1 })
-                    .skip(skip)
-                    .limit(parseInt(limit));
-
-                const total = await News.countDocuments({ status: 1 });
-
-                res.status(200).json({
-                    success: true,
-                    data: news,
-                    total,
-                    page: parseInt(page),
-                    pages: Math.ceil(total / limit),
-                    message: 'News fetched successfully'
-                });
+                condition = { id: parseInt(post_id) };
             }
+
+            if (req?.role === "admin" && type) {
+                if (type === "draft") condition = { status: 0 };
+                else if (type === "scheduled") condition = { status: 2 };
+                else if (type === "premium") condition = { isPremiumUser: true };
+            } else if (user_id || isSelf) {
+                const filter = {};
+                if (type === "draft") filter.status = 0;
+                else if (type === "scheduled") filter.status = 2;
+                else if (type === "premium") filter.isPremiumUser = true;
+
+                condition = { user_id: isSelf ? req?.userId : parseInt(user_id), ...filter };
+            } else {
+                condition = { status: 1 };
+            }
+
+            const news = await prisma.news.findMany({
+                where: condition,
+                skip,
+                take: parseInt(limit),
+                orderBy: { createdAt: "desc" },
+                include: { user: { select: { id: true, name: true, email: true } } },
+            });
+
+            const total = await prisma.news.count({ where: condition });
+
+            res.status(200).json({
+                success: true,
+                data: news,
+                total,
+                page: parseInt(page),
+                pages: Math.ceil(total / limit),
+                message: "News fetched successfully",
+            });
         } catch (error) {
             res.status(500).json({
                 success: false,
-                message: 'Failed to fetch news',
-                error: error.message
+                message: "Failed to fetch news",
+                error: error.message,
             });
         }
     },
 
+    // CREATE or UPDATE news
     CreateNews: async (req, res) => {
-        const session = await mongoose.startSession();
-
         try {
             const { news_id, type, title, newsText, category, scheduleNews, isPremiumUser, premiumcredits } = req.body;
-            console.dir(req.body, { depth: null });
-            if (news_id) {
-                // Start transaction for update
-                session.startTransaction();
 
-                // First get the existing news to handle image cleanup
-                const existingNews = await News.findById(news_id).session(session);
+            if (news_id) {
+                // UPDATE - First delete existing images
+                const existingNews = await prisma.news.findUnique({
+                    where: { id: parseInt(news_id) },
+                    include: { images: true }
+                });
+
                 if (!existingNews) {
-                    throw new Error('News not found');
+                    return res.status(404).json({ success: false, message: "News not found" });
                 }
 
-                let updateData = {
-                    title,
-                    newsText,
-                    category,
-                    scheduleNews: scheduleNews || null,
-                    isPremiumUser,
-                    premiumcredits: isPremiumUser ? premiumcredits : null,
-                    status: type === 'draft' ? 0 : scheduleNews ? 2 : 1,
-                    updated_by: req?.userId
-                };
-
-                // Delete old images from filesystem
+                // Delete old images from database and filesystem
                 if (existingNews.images && existingNews.images.length > 0) {
-                    existingNews.images.forEach(image => {
+                    // Delete from database
+                    await prisma.image.deleteMany({
+                        where: { news_id: parseInt(news_id) }
+                    });
+
+                    // Delete from filesystem
+                    existingNews.images.forEach((image) => {
                         try {
-                            if (image.url) {
-                                const filename = image.url.replace('/uploads/news/', '');
-                                const filePath = path.join(__dirname, '../uploads/news/', filename);
-                                if (fs.existsSync(filePath)) {
-                                    fs.unlinkSync(filePath);
-                                }
-                            }
-                        } catch (fileError) {
-                            console.error('Error deleting old image:', fileError);
+                            const filename = image.url.replace("/uploads/news/", "");
+                            const filePath = path.join(__dirname, "../uploads/news/", filename);
+                            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                        } catch (err) {
+                            console.error("Error deleting old image:", err);
                         }
                     });
                 }
 
-                // Handle image updates if files are present
+                // Handle new images
+                let imageCreateData = [];
                 if (req.files && req.files.length > 0) {
-                    // Add new images
-                    const images = req.files.map(file => ({
-                        url: file.filename ? '/uploads/news/' + file.filename : null
+                    imageCreateData = req.files.map((file) => ({
+                        url: `/uploads/news/${file.filename}`
                     }));
-                    updateData.images = images;
                 }
 
-                // Find and update the news
-                const updatedNews = await News.findByIdAndUpdate(
-                    news_id,
-                    { $set: updateData },
-                    { new: true, session }
-                );
-
-                // Commit transaction if all operations succeed
-                await session.commitTransaction();
-                session.endSession();
+                const updatedNews = await prisma.news.update({
+                    where: { id: parseInt(news_id) },
+                    data: {
+                        title,
+                        newsText,
+                        category,
+                        scheduleNews: scheduleNews ? new Date(scheduleNews) : null,
+                        isPremiumUser: isPremiumUser === "true",
+                        premiumcredits: isPremiumUser ? parseInt(premiumcredits) : null,
+                        status: type === "draft" ? 0 : scheduleNews ? 2 : 1,
+                        updated_by: req?.userId,
+                        images: {
+                            create: imageCreateData
+                        }
+                    },
+                    include: {
+                        images: true
+                    }
+                });
 
                 res.status(200).json({
                     success: true,
                     data: updatedNews,
-                    message: 'News updated successfully'
+                    message: "News updated successfully",
                 });
             } else {
+                // CREATE
                 if (!newsText) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Please fill required fields'
-                    });
+                    return res.status(400).json({ success: false, message: "Please fill required fields" });
                 }
 
-                // Start transaction
-                session.startTransaction();
-
-                let images = [];
-
+                let imageCreateData = [];
                 if (req.files && req.files.length > 0) {
-                    images = req.files.map(file => ({
-                        url: file.filename ? '/uploads/news/' + file.filename : null
+                    imageCreateData = req.files.map((file) => ({
+                        url: `/uploads/news/${file.filename}`
                     }));
                 }
 
-                // Create news document
-                const newNews = new News({
-                    title,
-                    newsText,
-                    category,
-                    scheduleNews: scheduleNews || null,
-                    isPremiumUser: isPremiumUser || false,
-                    user_id: req.user?.id,
-                    premiumcredits: isPremiumUser ? premiumcredits : null,
-                    status: 1,
-                    // status: type === 'draft' ? 0 : scheduleNews ? 2 : 1,
-                    created_by: req.user?.id,
-                    images: images
+                const newNews = await prisma.news.create({
+                    data: {
+                        title,
+                        newsText,
+                        category,
+                        scheduleNews: scheduleNews ? new Date(scheduleNews) : null,
+                        isPremiumUser: isPremiumUser === "true",
+                        premiumcredits: isPremiumUser ? parseInt(premiumcredits) : null,
+                        status: type === "draft" ? 0 : scheduleNews ? 2 : 1,
+                        created_by: req.user?.id,
+                        user_id: req.user?.id,
+                        images: {
+                            create: imageCreateData
+                        }
+                    },
+                    include: {
+                        images: true
+                    }
                 });
-
-                await newNews.save({ session });
-
-                // Commit transaction if all operations succeed
-                await session.commitTransaction();
-                session.endSession();
 
                 res.status(201).json({
                     success: true,
                     data: newNews,
-                    message: 'News created successfully'
+                    message: "News created successfully",
                 });
             }
         } catch (error) {
-            // Rollback transaction on error
-            if (session.inTransaction()) {
-                await session.abortTransaction();
-            }
-            session.endSession();
-
-            if (req.files && req.files.length > 0) {
-                req.files.forEach(file => {
-                    try {
-                        const filePath = path.join(__dirname, '../uploads/news/', file.filename);
-                        if (fs.existsSync(filePath)) {
-                            fs.unlinkSync(filePath);
-                        }
-                    } catch (fileError) {
-                        console.error('Error cleaning up file:', fileError);
-                    }
-                });
-            }
-
-            console.error('Error creating news:', error);
+            console.error("Error creating news:", error);
             res.status(500).json({
                 success: false,
-                message: 'Failed to create news',
-                error: error.message
+                message: "Failed to create news",
+                error: error.message,
             });
         }
     },
 
-
+    // DELETE news
     DeleteNews: async (req, res) => {
-        const session = await mongoose.startSession();
-
         try {
             const { id } = req.query;
-
             if (!id) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'News ID is required'
-                });
+                return res.status(400).json({ success: false, message: "News ID is required" });
             }
 
-            // Start transaction
-            session.startTransaction();
-
-            // Find the news first to get image paths before deletion
-            const newsToDelete = await News.findOne({ _id: id }).session(session);
-
+            const newsToDelete = await prisma.news.findUnique({ where: { id: parseInt(id) } });
             if (!newsToDelete) {
-                await session.abortTransaction();
-                session.endSession();
-                return res.status(404).json({
-                    success: false,
-                    message: 'News not found'
+                return res.status(404).json({ success: false, message: "News not found" });
+            }
+
+            // Delete images
+            if (newsToDelete.images && newsToDelete.images.length > 0) {
+                newsToDelete.images.forEach((image) => {
+                    try {
+                        const filename = image.split("/uploads/news/")[1];
+                        const filePath = path.join(__dirname, "../uploads/news/", filename);
+                        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    } catch (err) {
+                        console.error("Error deleting news image:", err);
+                    }
                 });
             }
 
-            // Delete associated images from filesystem
-            if (newsToDelete.images && newsToDelete.images.length > 0) {
-                await Promise.all(newsToDelete.images.map(async (image) => {
-                    try {
-                        if (image.url) {
-                            const filename = image.url.split('/uploads/news/')[1];
-                            if (filename) {
-                                const filePath = path.join(__dirname, '../uploads/news/', filename);
-                                if (fs.existsSync(filePath)) {
-                                    fs.unlinkSync(filePath);
-                                }
-                            }
-                        }
-                    } catch (fileError) {
-                        console.error('Error deleting news image:', fileError);
-                        // Continue with deletion even if image deletion fails
-                    }
-                }));
-            }
-
-            // Delete the news document
-            await News.findOneAndDelete({ _id: id }).session(session);
-
-            // Commit transaction
-            await session.commitTransaction();
-            session.endSession();
+            await prisma.news.delete({ where: { id: parseInt(id) } });
 
             res.status(200).json({
                 success: true,
-                message: 'News deleted successfully'
+                message: "News deleted successfully",
             });
-
         } catch (error) {
-            // Rollback transaction on error
-            if (session.inTransaction()) {
-                await session.abortTransaction();
-            }
-            session.endSession();
-
-            console.error('Error deleting news:', error);
+            console.error("Error deleting news:", error);
             res.status(500).json({
                 success: false,
-                message: 'Failed to delete news',
-                error: error.message
+                message: "Failed to delete news",
+                error: error.message,
             });
         }
     },

@@ -1,0 +1,31 @@
+model News {
+  id             Int       @id @default(autoincrement())
+  title          String?
+  newsText       String?
+  category       String?
+  scheduleNews   DateTime? @default(NULL)
+  isPremiumUser  Boolean   @default(false)
+  premiumcredits String?
+  type           String?
+
+  user_id    Int?
+  user       User?      @relation(fields: [user_id], references: [id])
+
+  images     Image[]
+
+  status     Int        @default(1)
+  createdBy  User?      @relation("CreatedBy", fields: [created_by], references: [id])
+  updatedBy  User?      @relation("UpdatedBy", fields: [updated_by], references: [id])
+
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+
+model Image {
+  id      Int    @id @default(autoincrement())
+  url     String
+  news_id Int
+  news    News   @relation(fields: [news_id], references: [id])
+}
+
