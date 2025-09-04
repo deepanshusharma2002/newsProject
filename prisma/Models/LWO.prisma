@@ -1,0 +1,10 @@
+model LWO {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  otp        String? 
+  isVerified Boolean  @default(false)
+  otpExpires DateTime?   
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+model LWO {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  otp        String? 
+  isVerified Boolean  @default(false)
+  otpExpires DateTime?   
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model News {
+  id             Int       @id @default(autoincrement())
+  title          String?
+  newsText       String?
+  category       String?
+  scheduleNews   DateTime?
+  isPremiumUser  Boolean   @default(false)
+  premiumcredits String?
+  type           String?
+  
+  // Foreign keys
+  user_id     Int?
+  created_by  Int?
+  updated_by  Int?
+  
+  // Relations
+  user        User?      @relation(fields: [user_id], references: [id], name: "NewsAuthor")
+  createdBy   User?      @relation(fields: [created_by], references: [id], name: "NewsCreatedBy")
+  updatedBy   User?      @relation(fields: [updated_by], references: [id], name: "NewsUpdatedBy")
+  
+  images      Image[]
+  status      Int        @default(1)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Image {
+  id      Int    @id @default(autoincrement())
+  url     String
+  news_id Int
+  news    News   @relation(fields: [news_id], references: [id])
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  otp        String?
+  isVerified Boolean  @default(false)
+  role       String   @default("user")
+  otpExpires DateTime?
+  name       String?
+  number     String?
+  type       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  news         News[]   @relation("NewsAuthor")
+  createdNews  News[]   @relation("NewsCreatedBy")
+  updatedNews  News[]   @relation("NewsUpdatedBy")
+}

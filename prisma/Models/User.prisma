@@ -1,0 +1,18 @@
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  otp        String?
+  isVerified Boolean  @default(false)
+  role       String   @default("user")
+  otpExpires DateTime?
+  name       String?
+  number     String?
+  type       String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  news       News[]   // one user can create multiple news
+}

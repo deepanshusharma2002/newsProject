@@ -1,59 +1,365 @@
-const User = require("../models/User");
-const jwt = require("jsonwebtoken");
-const LoginWithOtpModel = require("../models/LoginWithOtpModel");
-const nodemailer = require("nodemailer");
+// const User = require("../models/User");
+// const jwt = require("jsonwebtoken");
+// const LoginWithOtpModel = require("../models/LoginWithOtpModel");
+// const nodemailer = require("nodemailer");
 
+
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: process.env.MONGO_URI || 'deepansu082002@gmail.com',
+//     pass: process.env.MAILTRAP_PASS || 'ufpufuijvtzbblya'
+//   }
+// });
+
+// // Generate OTP
+// const generateOTP = () => {
+//   return Math.floor(1000 + Math.random() * 9000).toString();
+// };
+
+// // Signup
+// exports.signup = async (req, res) => {
+//   const { name, type, number, email, password } = req.body;
+
+//   try {
+
+//     await User.deleteMany({ email, isVerified: false });
+//     let user = await User.findOne({ email });
+//     if (user) {
+//       return res.status(400).json({ message: "User already exists" });
+//     }
+
+//     const otp = generateOTP();
+//     const otpExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+
+//     user = new User({
+//       email,
+//       password: password,
+//       otp,
+//       otpExpires,
+//       isVerified: false,
+//       name: name,
+//       number: number,
+//       type: type
+//     });
+
+//     // Send OTP email
+//     const mailOptions = {
+//       from: "auth@example.com",
+//       to: email,
+//       subject: "Your OTP Code",
+//       text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+
+//     await user.save();
+
+//     res.status(201).json({ message: "OTP sent to email. Please verify." });
+//   } catch (error) {
+//     console.error("Signup error:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+// // Verify OTP
+// exports.verifyOTP = async (req, res) => {
+//   const { email, otp, type } = req.body;
+
+//   try {
+//     if (type?.toLowerCase() === "login") {
+//       const user = await User.findOne({ email });
+//       const Lwo = await LoginWithOtpModel.findOne({ email });
+//       if (!Lwo && !user) {
+//         return res.status(400).json({ message: "User or otp request not found" });
+//       }
+
+//       if (Lwo.isVerified) {
+//         return res.status(400).json({ message: "User already verified" });
+//       }
+
+//       if (Lwo.otp !== otp || Lwo.otpExpires < Date.now()) {
+//         return res.status(400).json({ message: "Invalid or expired OTP" });
+//       }
+
+//       await LoginWithOtpModel.deleteMany({ email });
+
+//       const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+//         expiresIn: "1d",
+//       });
+
+//       res.status(200).json({ message: "Login successful", data: { token, id: user._id, role: user.role } });
+//     } else {
+//       const user = await User.findOne({ email });
+//       if (!user) {
+//         return res.status(400).json({ message: "User not found" });
+//       }
+
+//       if (user.isVerified) {
+//         return res.status(400).json({ message: "User already verified" });
+//       }
+
+//       if (user.otp !== otp || user.otpExpires < Date.now()) {
+//         return res.status(400).json({ message: "Invalid or expired OTP" });
+//       }
+
+//       user.isVerified = true;
+//       user.otp = undefined;
+//       user.otpExpires = undefined;
+//       await user.save();
+
+//       const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+//         expiresIn: "1d",
+//       });
+
+//       res.status(200).json({ message: "User verified successfully", data: { token, id: user._id, role: user.role } });
+//     }
+
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+// // Login
+// exports.login = async (req, res) => {
+//   const { email, password, type } = req.body;
+
+//   try {
+//     if (type?.toLowerCase() === "otp") {
+//       const user = await User.findOne({ email });
+//       if (!user) {
+//         return res.status(400).json({ message: "Invalid credentials" });
+//       }
+
+//       if (!user?.isVerified) {
+//         return res.status(400).json({ message: "User Not Verified" });
+//       }
+
+//       if (!user.isVerified && !otp) {
+//         return res
+//           .status(400)
+//           .json({ message: "Please fill email and otp" });
+//       }
+
+//       const otp = generateOTP();
+//       const otpExpires = Date.now() + 10 * 60 * 1000;
+
+//       const checkRequest = await LoginWithOtpModel.findOne({ email });
+
+//       if (checkRequest) {
+//         const otp = generateOTP();
+//         const otpExpires = Date.now() + 10 * 60 * 1000;
+
+
+//         checkRequest.otp = otp;
+//         checkRequest.otpExpires = otpExpires;
+
+//         await checkRequest.save();
+
+//         // Send OTP email
+//         const mailOptions = {
+//           from: "auth@example.com",
+//           to: email,
+//           subject: "Your OTP Code",
+//           text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
+//         };
+
+//         await transporter.sendMail(mailOptions);
+
+//         res.status(201).json({ message: "OTP sent to email. Please verify." });
+//       } else {
+
+//         const Lwo = new LoginWithOtpModel({
+//           email,
+//           otp,
+//           otpExpires,
+//           isVerified: false
+//         });
+
+//         await Lwo.save();
+
+//         // Send OTP email
+//         const mailOptions = {
+//           from: "auth@example.com",
+//           to: email,
+//           subject: "Your OTP Code",
+//           text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
+//         };
+
+//         await transporter.sendMail(mailOptions);
+
+//         res.status(201).json({ message: "OTP sent to email. Please verify." });
+//       }
+//     } else {
+//       const user = await User.findOne({ email, isVerified: true });
+//       if (!user) {
+//         return res.status(400).json({ message: "Invalid credentials" });
+//       }
+
+//       if (!user.isVerified) {
+//         return res
+//           .status(400)
+//           .json({ message: "Please verify your email first" });
+//       }
+
+//       const isMatch = await user.comparePassword(password);
+//       if (!isMatch) {
+//         return res.status(400).json({ message: "Invalid credentials" });
+//       }
+
+//       const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+//         expiresIn: "1d",
+//       });
+
+//       res.status(200).json({ message: "Login successful", data: { token, id: user._id, role: user.role } });
+//     }
+
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+// // Validate Token
+// exports.validateToken = async (req, res) => {
+//   let token = req.headers.authorization?.split(' ')[1];
+
+//   if (!token) {
+//     return res.status(401).json({ message: 'Not authorized, no token' });
+//   }
+
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     const user = await User.findOne({ _id: decoded.id, isVerified: true }).select('-password');
+//     if (!user) {
+//       return res.status(401).json({ message: 'User not Verified' });
+//     }
+
+//     res.status(200).json({ message: "Token is valid", data: user });
+//   } catch (error) {
+//     res.status(401).json({ message: "Invalid token", error: error.message });
+//   }
+// }
+
+// // Forgot Password
+// exports.forgotPassword = async (req, res) => {
+//   const { email } = req.body;
+
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(400).json({ message: "User not found" });
+//     }
+
+//     if (!user.isVerified) {
+//       return res
+//         .status(400)
+//         .json({ message: "Please verify your email first" });
+//     }
+
+//     const resetOTP = generateOTP();
+//     const resetPasswordExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+
+//     user.resetPasswordOTP = resetOTP;
+//     user.resetPasswordExpires = resetPasswordExpires;
+//     await user.save();
+
+//     // Send reset OTP email
+//     const mailOptions = {
+//       from: "auth@example.com",
+//       to: email,
+//       subject: "Your Password Reset OTP",
+//       text: `Your password reset OTP is ${resetOTP}. It is valid for 10 minutes.`,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+
+//     res.status(200).json({ message: "Password reset OTP sent to email" });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+// // Reset Password
+// exports.resetPassword = async (req, res) => {
+//   const { email, otp, newPassword } = req.body;
+
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(400).json({ message: "User not found" });
+//     }
+
+//     if (
+//       user.resetPasswordOTP !== otp ||
+//       user.resetPasswordExpires < Date.now()
+//     ) {
+//       return res.status(400).json({ message: "Invalid or expired OTP" });
+//     }
+
+//     user.password = newPassword;
+//     user.resetPasswordOTP = undefined;
+//     user.resetPasswordExpires = undefined;
+//     await user.save();
+
+//     res.status(200).json({ message: "Password reset successfully" });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+const { PrismaClient } = require("@prisma/client");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
+
+const prisma = new PrismaClient();
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
-    user: process.env.MONGO_URI || 'deepansu082002@gmail.com',
-    pass: process.env.MAILTRAP_PASS || 'ufpufuijvtzbblya'
-  }
+    user: process.env.MAIL_USER || "deepansu082002@gmail.com",
+    pass: process.env.MAIL_PASS || "ufpufuijvtzbblya",
+  },
 });
 
 // Generate OTP
-const generateOTP = () => {
-  return Math.floor(1000 + Math.random() * 9000).toString();
-};
+const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 // Signup
 exports.signup = async (req, res) => {
   const { name, type, number, email, password } = req.body;
 
   try {
+    // delete unverified old user
+    await prisma.user.deleteMany({ where: { email, isVerified: false } });
 
-    await User.deleteMany({ email, isVerified: false });
-    let user = await User.findOne({ email });
-    if (user) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     const otp = generateOTP();
-    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    user = new User({
-      email,
-      password: password,
-      otp,
-      otpExpires,
-      isVerified: false,
-      name: name,
-      number: number,
-      type: type
+    // Convert number to string
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: await bcrypt.hash(password, 10),
+        otp,
+        otpExpires,
+        isVerified: false,
+        name,
+        number: number.toString(), // Convert to string
+        type,
+      },
     });
 
-    // Send OTP email
-    const mailOptions = {
+    await transporter.sendMail({
       from: "auth@example.com",
       to: email,
       subject: "Your OTP Code",
       text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    await user.save();
+    });
 
     res.status(201).json({ message: "OTP sent to email. Please verify." });
   } catch (error) {
@@ -68,53 +374,40 @@ exports.verifyOTP = async (req, res) => {
 
   try {
     if (type?.toLowerCase() === "login") {
-      const user = await User.findOne({ email });
-      const Lwo = await LoginWithOtpModel.findOne({ email });
-      if (!Lwo && !user) {
-        return res.status(400).json({ message: "User or otp request not found" });
-      }
+      const user = await prisma.user.findUnique({ where: { email } });
+      const lwo = await prisma.lWO.findUnique({ where: { email } });
 
-      if (Lwo.isVerified) {
-        return res.status(400).json({ message: "User already verified" });
-      }
+      if (!lwo && !user) return res.status(400).json({ message: "User or otp request not found" });
+      if (lwo.isVerified) return res.status(400).json({ message: "User already verified" });
 
-      if (Lwo.otp !== otp || Lwo.otpExpires < Date.now()) {
+      if (lwo.otp !== otp || lwo.otpExpires < new Date()) {
         return res.status(400).json({ message: "Invalid or expired OTP" });
       }
 
-      await LoginWithOtpModel.deleteMany({ email });
+      await prisma.lWO.deleteMany({ where: { email } });
 
-      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-        expiresIn: "1d",
-      });
+      const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
-      res.status(200).json({ message: "Login successful", data: { token, id: user._id, role: user.role } });
+      return res.status(200).json({ message: "Login successful", data: { token, id: user.id, role: user.role } });
     } else {
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ message: "User not found" });
-      }
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) return res.status(400).json({ message: "User not found" });
 
-      if (user.isVerified) {
-        return res.status(400).json({ message: "User already verified" });
-      }
+      if (user.isVerified) return res.status(400).json({ message: "User already verified" });
 
-      if (user.otp !== otp || user.otpExpires < Date.now()) {
+      if (user.otp !== otp || user.otpExpires < new Date()) {
         return res.status(400).json({ message: "Invalid or expired OTP" });
       }
 
-      user.isVerified = true;
-      user.otp = undefined;
-      user.otpExpires = undefined;
-      await user.save();
-
-      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-        expiresIn: "1d",
+      const updated = await prisma.user.update({
+        where: { email },
+        data: { isVerified: true, otp: null, otpExpires: null },
       });
 
-      res.status(200).json({ message: "User verified successfully", data: { token, id: user._id, role: user.role } });
-    }
+      const token = jwt.sign({ id: updated.id, role: updated.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
+      res.status(200).json({ message: "User verified successfully", data: { token, id: updated.id, role: updated.role } });
+    }
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -126,94 +419,44 @@ exports.login = async (req, res) => {
 
   try {
     if (type?.toLowerCase() === "otp") {
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ message: "Invalid credentials" });
-      }
-
-      if (!user?.isVerified) {
-        return res.status(400).json({ message: "User Not Verified" });
-      }
-
-      if (!user.isVerified && !otp) {
-        return res
-          .status(400)
-          .json({ message: "Please fill email and otp" });
-      }
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) return res.status(400).json({ message: "Invalid credentials" });
+      if (!user.isVerified) return res.status(400).json({ message: "User not verified" });
 
       const otp = generateOTP();
-      const otpExpires = Date.now() + 10 * 60 * 1000;
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-      const checkRequest = await LoginWithOtpModel.findOne({ email });
-
-      if (checkRequest) {
-        const otp = generateOTP();
-        const otpExpires = Date.now() + 10 * 60 * 1000;
-
-
-        checkRequest.otp = otp;
-        checkRequest.otpExpires = otpExpires;
-
-        await checkRequest.save();
-
-        // Send OTP email
-        const mailOptions = {
-          from: "auth@example.com",
-          to: email,
-          subject: "Your OTP Code",
-          text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        res.status(201).json({ message: "OTP sent to email. Please verify." });
-      } else {
-
-        const Lwo = new LoginWithOtpModel({
-          email,
-          otp,
-          otpExpires,
-          isVerified: false
+      const existingReq = await prisma.lWO.findUnique({ where: { email } });
+      if (existingReq) {
+        await prisma.lWO.update({
+          where: { email },
+          data: { otp, otpExpires },
         });
-
-        await Lwo.save();
-
-        // Send OTP email
-        const mailOptions = {
-          from: "auth@example.com",
-          to: email,
-          subject: "Your OTP Code",
-          text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        res.status(201).json({ message: "OTP sent to email. Please verify." });
-      }
-    } else {
-      const user = await User.findOne({ email, isVerified: true });
-      if (!user) {
-        return res.status(400).json({ message: "Invalid credentials" });
+      } else {
+        await prisma.lWO.create({
+          data: { email, otp, otpExpires, isVerified: false },
+        });
       }
 
-      if (!user.isVerified) {
-        return res
-          .status(400)
-          .json({ message: "Please verify your email first" });
-      }
-
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        return res.status(400).json({ message: "Invalid credentials" });
-      }
-
-      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-        expiresIn: "1d",
+      await transporter.sendMail({
+        from: "auth@example.com",
+        to: email,
+        subject: "Your OTP Code",
+        text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
       });
 
-      res.status(200).json({ message: "Login successful", data: { token, id: user._id, role: user.role } });
-    }
+      return res.status(201).json({ message: "OTP sent to email. Please verify." });
+    } else {
+      const user = await prisma.user.findFirst({ where: { email, isVerified: true } });
+      if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+      const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+      res.status(200).json({ message: "Login successful", data: { token, id: user.id, role: user.role } });
+    }
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -221,57 +464,46 @@ exports.login = async (req, res) => {
 
 // Validate Token
 exports.validateToken = async (req, res) => {
-  let token = req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
-  }
+  let token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Not authorized, no token" });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ _id: decoded.id, isVerified: true }).select('-password');
-    if (!user) {
-      return res.status(401).json({ message: 'User not Verified' });
-    }
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.id, isVerified: true },
+      select: { password: false, email: true, id: true, role: true, name: true },
+    });
 
+    if (!user) return res.status(401).json({ message: "User not verified" });
     res.status(200).json({ message: "Token is valid", data: user });
   } catch (error) {
     res.status(401).json({ message: "Invalid token", error: error.message });
   }
-}
+};
 
 // Forgot Password
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-    }
-
-    if (!user.isVerified) {
-      return res
-        .status(400)
-        .json({ message: "Please verify your email first" });
-    }
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user.isVerified) return res.status(400).json({ message: "Please verify your email first" });
 
     const resetOTP = generateOTP();
-    const resetPasswordExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+    const resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    user.resetPasswordOTP = resetOTP;
-    user.resetPasswordExpires = resetPasswordExpires;
-    await user.save();
+    await prisma.user.update({
+      where: { email },
+      data: { resetPasswordOTP: resetOTP, resetPasswordExpires },
+    });
 
-    // Send reset OTP email
-    const mailOptions = {
+    await transporter.sendMail({
       from: "auth@example.com",
       to: email,
       subject: "Your Password Reset OTP",
       text: `Your password reset OTP is ${resetOTP}. It is valid for 10 minutes.`,
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
 
     res.status(200).json({ message: "Password reset OTP sent to email" });
   } catch (error) {
@@ -284,22 +516,21 @@ exports.resetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-    }
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ message: "User not found" });
 
-    if (
-      user.resetPasswordOTP !== otp ||
-      user.resetPasswordExpires < Date.now()
-    ) {
+    if (user.resetPasswordOTP !== otp || user.resetPasswordExpires < new Date()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    user.password = newPassword;
-    user.resetPasswordOTP = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: await bcrypt.hash(newPassword, 10),
+        resetPasswordOTP: null,
+        resetPasswordExpires: null,
+      },
+    });
 
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
